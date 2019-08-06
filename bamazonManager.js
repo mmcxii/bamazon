@@ -132,8 +132,8 @@ function addNewProduct() {
                 type: 'input',
             },
             {
-                message: 'What is department is the product sold in?',
-                name: 'department_name',
+                message: 'What is is the id of the department this product is sold in?',
+                name: 'dept_id',
                 type: 'input',
             },
             {
@@ -148,13 +148,20 @@ function addNewProduct() {
             },
         ])
         .then((res) => {
-            const { product_name, department_name, price, stock_quantity } = res;
+            const { product_name, dept_id, price, stock_quantity } = res;
 
             const sql = 'INSERT INTO products SET ?';
-            const product = { product_name, department_name, price, stock_quantity };
+            const product = { product_name, dept_id, price, stock_quantity };
 
             db.query(sql, product, (err, res) => {
                 if (err) throw err;
+
+                const sql =
+                    'UPDATE products, departments SET products.department_name = departments.department_name WHERE products.dept_id = departments.department_id';
+
+                db.query(sql, (err, res) => {
+                    if (err) throw err;
+                });
 
                 console.log('New product successfully added added');
 

@@ -79,9 +79,14 @@ function checkStock(id, qty) {
     });
 }
 
-//* Reduces quantity of desired item in database
+//* Reduces quantity of desired item in database and updates product_sales
 function handlePurchase(id, qty) {
-    const sql = `UPDATE products SET stock_quantity = stock_quantity - ${qty} WHERE item_id = ${id}`;
+    const sql = `UPDATE products, departments
+                 SET products.stock_quantity = products.stock_quantity - ${qty},
+                     products.product_sales = products.product_sales + ${qty} * products.price,
+                     departments.product_sales = departments.product_sales + ${qty} * products.price
+                 WHERE products.item_id = ${id}
+                 AND products.dept_id = departments.department_id`;
 
     db.query(sql, (err, res) => {
         if (err) throw err;
