@@ -67,7 +67,7 @@ function viewProducts() {
 }
 
 function viewLowInv() {
-    const sql = 'SELECT * FROM products WHERE stock_quantity < 5';
+    const sql = 'SELECT * FROM products WHERE stock_quantity <= 5';
 
     db.query(sql, (err, res) => {
         if (err) throw err;
@@ -124,48 +124,65 @@ function addToInv() {
 }
 
 function addNewProduct() {
-    inquirer
-        .prompt([
-            {
-                message: 'What is the name of the new product?',
-                name: 'product_name',
-                type: 'input',
-            },
-            {
-                message: 'What is is the id of the department this product is sold in?',
-                name: 'dept_id',
-                type: 'input',
-            },
-            {
-                message: 'What is the cost of the new product?',
-                name: 'price',
-                type: 'input',
-            },
-            {
-                message: 'What is the initial stock?',
-                name: 'stock_quantity',
-                type: 'input',
-            },
-        ])
-        .then((res) => {
-            const { product_name, dept_id, price, stock_quantity } = res;
+    const sql = 'SELECT * FROM departments';
+    const depts = [];
 
-            const sql = 'INSERT INTO products SET ?';
-            const product = { product_name, dept_id, price, stock_quantity };
+    db.query(sql, (err, res) => {
+        if (err) throw err;
 
-            db.query(sql, product, (err, res) => {
-                if (err) throw err;
+        res.forEach((item) => depts.push(`${item.department_id}: ${item.department_name}`));
 
-                const sql =
-                    'UPDATE products, departments SET products.department_name = departments.department_name WHERE products.dept_id = departments.department_id';
+        inquirer
+            .prompt([
+                {
+                    message: 'What is the name of the new product?',
+                    name: 'product_name',
+                    type: 'input',
+                },
+                {
+                    message: 'Which department is this product to be sold in?',
+                    choices: depts,
+                    name: 'dept',
+                    type: 'list',
+                },
+                {
+                    message: 'What is the cost of the new product?',
+                    name: 'price',
+                    type: 'input',
+                },
+                {
+                    message: 'What is the initial stock?',
+                    name: 'stock_quantity',
+                    type: 'input',
+                },
+            ])
+            .then((res) => {
+                const { product_name, dept, price, stock_quantity } = res;
+                const dept_id = parseInt(dept.split(' ')[0].slice(0, -1));
+                const dept_name = dept
+                    .split(' ')
+                    .splice(1)
+                    .join(' ');
 
-                db.query(sql, (err, res) => {
+                const sql = 'INSERT INTO products SET ?';
+                const product = { product_name, dept_id, price, stock_quantity };
+
+                db.query(sql, product, (err, res) => {
                     if (err) throw err;
+
+                    const sql =
+                        'UPDATE products, departments SET products.department_name = departments.department_name WHERE products.dept_id = departments.department_id';
+
+                    db.query(sql, (err, res) => {
+                        if (err) throw err;
+                    });
+
+                    console.log(
+                        `${product_name} successfully added added to ${dept_name}'s store. Initial quantity: ${stock_quantity}`
+                    );
+
+                    db.end();
                 });
-
-                console.log('New product successfully added added');
-
-                db.end();
             });
-        });
+    });
 }
